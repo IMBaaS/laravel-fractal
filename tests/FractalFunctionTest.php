@@ -55,6 +55,16 @@ class FractalFunctionTest extends TestCase
     }
 
     /** @test */
+    public function it_can_transform_the_given_empty_array_with_the_given_transformer()
+    {
+        $transformedData = fractal([], new TestTransformer())->toArray();
+
+        $expectedArray = ['data' => []];
+
+        $this->assertEquals($expectedArray, $transformedData);
+    }
+
+    /** @test */
     public function it_perform_a_transformation_with_the_given_serializer()
     {
         $transformedData = fractal(
@@ -77,7 +87,7 @@ class FractalFunctionTest extends TestCase
         $paginator = new LengthAwarePaginator(
             $this->testBooks,
             count($this->testBooks),
-            2
+            1
         );
 
         $transformedData = fractal(
@@ -94,10 +104,12 @@ class FractalFunctionTest extends TestCase
                 'pagination' => [
                     'total' => 2,
                     'count' => 2,
-                    'per_page' => 2,
+                    'per_page' => 1,
                     'current_page' => 1,
-                    'total_pages' => 1,
-                    'links' => [],
+                    'total_pages' => 2,
+                    'links' => [
+                        'next' => '/?page=2',
+                    ],
                 ],
             ],
         ];

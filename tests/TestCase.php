@@ -2,11 +2,15 @@
 
 namespace Spatie\Fractal\Test;
 
+use Illuminate\Support\Facades\Route;
 use Spatie\Fractal\FractalServiceProvider;
 use Orchestra\Testbench\TestCase as Orchestra;
+use DMS\PHPUnitExtensions\ArraySubset\ArraySubsetAsserts;
 
 abstract class TestCase extends Orchestra
 {
+    use ArraySubsetAsserts;
+
     /** @var \Spatie\Fractal\Fractal */
     protected $fractal;
 
@@ -16,9 +20,13 @@ abstract class TestCase extends Orchestra
     /** @var string|\League\Fractal\Serializer\SerializerAbstract */
     protected $defaultSerializer;
 
-    public function setUp($defaultSerializer = '')
+    /** @var string|\League\Fractal\Pagination\PaginatorInterface */
+    protected $defaultPaginator;
+
+    public function setUp($defaultSerializer = '', $defaultPaginator = ''): void
     {
         $this->defaultSerializer = $defaultSerializer;
+        $this->defaultPaginator = $defaultPaginator;
 
         parent::setUp();
 
@@ -44,6 +52,8 @@ abstract class TestCase extends Orchestra
                 'publisher' => 'Bloody Fantasy inc.',
             ],
         ];
+
+        $this->setupRoutes();
     }
 
     protected function getPackageProviders($app)
@@ -61,7 +71,21 @@ abstract class TestCase extends Orchestra
     protected function getEnvironmentSetUp($app)
     {
         if ($this->defaultSerializer != '') {
-            $app['config']->set('laravel-fractal.default_serializer', $this->defaultSerializer);
+            $app['config']->set('fractal.default_serializer', $this->defaultSerializer);
         }
+
+        if ($this->defaultPaginator != '') {
+            $app['config']->set('fractal.default_paginator', $this->defaultPaginator);
+        }
+    }
+
+    protected function setupRoutes()
+    {
+        Route::get('auto-includes', function () {
+            return fractal()
+                ->collection($this->testBooks)
+                ->transformWith(TestTransformer::class)
+                ->toArray();
+        });
     }
 }

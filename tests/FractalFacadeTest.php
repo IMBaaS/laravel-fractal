@@ -13,6 +13,7 @@ class FractalFacadeTest extends TestCase
     public function it_returns_an_instance_of_fractal()
     {
         $this->assertInstanceOf(Fractal::class, FractalFacade::collection([]));
+        $this->assertInstanceOf(Fractal::class, \Spatie\Fractal\Facades\Fractal::collection([]));
     }
 
     /** @test */
@@ -30,7 +31,7 @@ class FractalFacadeTest extends TestCase
     /** @test */
     public function it_will_use_the_configured_serializer()
     {
-        $this->app['config']->set('laravel-fractal.default_serializer', ArraySerializer::class);
+        $this->app['config']->set('fractal.default_serializer', ArraySerializer::class);
 
         $response = FractalFacade::create()
             ->item($this->testBooks[0])
@@ -43,7 +44,7 @@ class FractalFacadeTest extends TestCase
     /** @test */
     public function it_will_use_the_provided_serializer_instead_of_the_configured_serializer()
     {
-        $this->app['config']->set('laravel-fractal.default_serializer', DataArraySerializer::class);
+        $this->app['config']->set('fractal.default_serializer', DataArraySerializer::class);
 
         $actualArray = FractalFacade::create($this->testBooks, new TestTransformer, new ArraySerializer)->toArray();
 

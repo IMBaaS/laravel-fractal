@@ -2,6 +2,7 @@
 
 namespace Spatie\Fractal;
 
+use Illuminate\Support\Collection;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Lumen\Application as LumenApplication;
 use Spatie\Fractal\Console\Commands\TransformerMakeCommand;
@@ -21,6 +22,8 @@ class FractalServiceProvider extends ServiceProvider
                 TransformerMakeCommand::class,
             ]);
         }
+
+        $this->setupMacro();
     }
 
     /**
@@ -28,23 +31,33 @@ class FractalServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        $this->app->singleton('laravel-fractal', function (...$arguments) {
+        $this->app->singleton('fractal', function ($app, $arguments) {
             return fractal(...$arguments);
         });
 
-        $this->app->alias('laravel-fractal', Fractal::class);
+        $this->app->alias('fractal', Fractal::class);
     }
 
     protected function setupConfig()
     {
-        $source = realpath(__DIR__.'/../resources/config/laravel-fractal.php');
+        $source = realpath(__DIR__.'/../config/fractal.php');
 
         if ($this->app instanceof LaravelApplication) {
-            $this->publishes([$source => config_path('laravel-fractal.php')]);
+            $this->publishes([$source => config_path('fractal.php')]);
         } elseif ($this->app instanceof LumenApplication) {
-            $this->app->configure('laravel-fractal');
+            $this->app->configure('fractal');
         }
 
-        $this->mergeConfigFrom($source, 'laravel-fractal');
+        $this->mergeConfigFrom($source, 'fractal');
+    }
+
+    /**
+     * Add a 'transformWith' macro to Laravel's collection.
+     */
+    protected function setupMacro()
+    {
+        Collection::macro('transformWith', function ($transformer) {
+            return fractal($this, $transformer);
+        });
     }
 }

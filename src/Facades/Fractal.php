@@ -1,13 +1,13 @@
 <?php
 
-namespace Spatie\Fractal;
+namespace Spatie\Fractal\Facades;
 
 use Illuminate\Support\Facades\Facade;
 
 /**
  * @see \Spatie\Fractal\Fractal
  */
-class FractalFacade extends Facade
+class Fractal extends Facade
 {
     /**
      * Get the registered name of the component.

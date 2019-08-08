@@ -5,6 +5,8 @@ namespace Spatie\Fractal;
 use Closure;
 use League\Fractal\Manager;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Traits\Macroable;
+use League\Fractal\Serializer\JsonApiSerializer;
 use Spatie\Fractalistic\Fractal as Fractalistic;
 use League\Fractal\Serializer\SerializerAbstract;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -12,6 +14,10 @@ use League\Fractal\Pagination\IlluminatePaginatorAdapter;
 
 class Fractal extends Fractalistic
 {
+    use Macroable {
+        Macroable::__call as macroCall;
+    }
+
     /** @param \League\Fractal\Manager $manager */
     public function __construct(Manager $manager)
     {
@@ -29,12 +35,26 @@ class Fractal extends Fractalistic
     {
         $fractal = parent::create($data, $transformer, $serializer);
 
+        if (config('fractal.auto_includes.enabled')) {
+            $requestKey = config('fractal.auto_includes.request_key');
+
+            if ($include = app('request')->query($requestKey)) {
+                $fractal->parseIncludes($include);
+            }
+        }
+
         if (empty($serializer)) {
-            $serializer = config('laravel-fractal.default_serializer');
+            $serializer = config('fractal.default_serializer');
         }
 
         if ($data instanceof LengthAwarePaginator) {
-            $fractal->paginateWith(new IlluminatePaginatorAdapter($data));
+            $paginator = config('fractal.default_paginator');
+
+            if (empty($paginator)) {
+                $paginator = IlluminatePaginatorAdapter::class;
+            }
+
+            $fractal->paginateWith(new $paginator($data));
         }
 
         if (empty($serializer)) {
@@ -49,7 +69,13 @@ class Fractal extends Fractalistic
             return $fractal->serializeWith($serializer());
         }
 
-        return $fractal->serializeWith(new $serializer());
+        if ($serializer == JsonApiSerializer::class) {
+            $baseUrl = config('fractal.base_url');
+
+            return $fractal->serializeWith(new $serializer($baseUrl));
+        }
+
+        return $fractal->serializeWith(new $serializer);
     }
 
     /**
@@ -57,10 +83,11 @@ class Fractal extends Fractalistic
      *
      * @param  callable|int $statusCode
      * @param  callable|array $headers
+     * @param  callable|int $options
      *
      * @return \Illuminate\Http\JsonResponse
      */
-    public function respond($statusCode = 200, $headers = [])
+    public function respond($statusCode = 200, $headers = [], $options = 0)
     {
         $response = new JsonResponse();
 
@@ -78,6 +105,18 @@ class Fractal extends Fractalistic
             };
         }
 
+        if (is_int($options)) {
+            $options = function (JsonResponse $response) use ($options) {
+                $response->setEncodingOptions($options);
+
+                return $response;
+            };
+        }
+
+        if (is_callable($options)) {
+            $options($response);
+        }
+
         if (is_callable($statusCode)) {
             $statusCode($response);
         }
@@ -87,5 +126,14 @@ class Fractal extends Fractalistic
         }
 
         return $response;
+    }
+
+    public function __call($name, array $arguments)
+    {
+        if (static::hasMacro($name)) {
+            return $this->macroCall($name, $arguments);
+        }
+
+        return parent::__call($name, $arguments);
     }
 }
