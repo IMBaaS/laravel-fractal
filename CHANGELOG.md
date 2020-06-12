@@ -2,6 +2,18 @@
 
 All notable changes to `laravel-fractal` will be documented in this file
 
+## 5.7.0 - 2020-03-02
+
+- add support for Laravel 7
+
+## 5.6.1 - 2019-11-19
+
+- update transformer stub (#200)
+
+## 5.6.0 - 2019-09-04
+
+- make compatible with Laravel 6
+
 ## 5.5.1 - 2019-03-13
 
 - add `Spatie\Fractal\Facades\Fractal`
